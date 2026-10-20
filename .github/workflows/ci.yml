@@ -42,17 +42,22 @@ jobs:
       - name: Validate Docker Compose configuration
         run: |
           docker compose -f docker-compose.yml config -q
+          docker compose -f docker-compose.cassandra.yml config -q
           docker compose -f docker-compose.yml -f docker-compose.zitadel.yml --env-file "$RUNNER_TEMP/ci.env" config -q
-          docker compose -f docker-compose.yml -f docker-compose.zitadel.yml --env-file "$RUNNER_TEMP/ci.env" config --format json > "$RUNNER_TEMP/rendered.json"
+          docker compose -f docker-compose.yml -f docker-compose.zitadel.yml -f docker-compose.cassandra.yml --env-file "$RUNNER_TEMP/ci.env" config -q
+          docker compose -f docker-compose.yml -f docker-compose.zitadel.yml -f docker-compose.cassandra.yml --env-file "$RUNNER_TEMP/ci.env" config --format json > "$RUNNER_TEMP/rendered.json"
+          docker compose -f docker-compose.cassandra.yml config --format json > "$RUNNER_TEMP/rendered-cassandra.json"
 
       - name: Published ports are bound to localhost only
         run: |
           jq -e '[.services[].ports[]?] | length > 0' "$RUNNER_TEMP/rendered.json" > /dev/null
           jq -e '[.services[].ports[]? | .host_ip] | all(. == "127.0.0.1")' "$RUNNER_TEMP/rendered.json" > /dev/null
+          jq -e '[.services[].ports[]?] | length > 0' "$RUNNER_TEMP/rendered-cassandra.json" > /dev/null
+          jq -e '[.services[].ports[]? | .host_ip] | all(. == "127.0.0.1")' "$RUNNER_TEMP/rendered-cassandra.json" > /dev/null
 
       - name: No docker.sock mounts
         run: |
-          ! grep -rn "docker.sock" docker-compose.yml docker-compose.zitadel.yml zitadel/traefik "$RUNNER_TEMP/rendered.json"
+          ! grep -rn "docker.sock" docker-compose.yml docker-compose.zitadel.yml docker-compose.cassandra.yml zitadel/traefik "$RUNNER_TEMP/rendered.json"
 
       - name: Shell syntax
         run: sh -n zitadel/create-db.sh
