@@ -3,7 +3,7 @@
 # Purely additive and idempotent: creates only what is missing; never alters, drops or grants anything
 # on the relay database. Re-running is a no-op and does NOT rotate an existing role's password.
 #
-# Usage (from infrastructure/, postgres service running; mandatory step 1 before starting the stack):
+# Usage (from the repository root, postgres service running; mandatory step 1 before starting the stack):
 #   ./zitadel/create-db.sh [env-file]      # default env file: ./.env.zitadel
 # The env file is NEVER sourced: only exact `KEY=value` lines are read as plain text. An already-exported
 # variable overrides the file. Validated (values never printed): ZITADEL_DB_NAME/USER [a-z0-9_]+, ZITADEL_DB_PASSWORD

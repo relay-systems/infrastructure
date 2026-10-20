@@ -1,0 +1,15 @@
+# Local secrets (the example file is the only tracked env file)
+.env
+.env.*
+!.env.zitadel.example
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Shared AI tooling (symlinks to ../ai, never committed)
+/CLAUDE.md
+/.claude
+/.serena/
+/graphify-out/

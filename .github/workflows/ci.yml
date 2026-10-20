@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - 'TASK_*'
+  pull_request:
+    branches:
+      - test
+      - main
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Synthetic, obviously fake values: nothing here is a real secret, and no container is started.
+      - name: Create synthetic environment
+        run: |
+          cat > "$RUNNER_TEMP/ci.env" <<EOF
+          ZITADEL_VERSION=v0.0.0-ci
+          TRAEFIK_IMAGE=traefik:ci
+          ZITADEL_DOMAIN=localhost
+          PROXY_HTTP_PUBLISHED_PORT=8081
+          ZITADEL_EXTERNALPORT=8081
+          ZITADEL_EXTERNALSECURE=false
+          ZITADEL_PUBLIC_SCHEME=http
+          ZITADEL_MASTERKEY=$(printf '%032d' 0)
+          LOGIN_SESSION_COOKIE_SECRET=$(printf '%040d' 0)
+          LOGIN_CLIENT_PAT_EXPIRATION=2099-01-01T00:00:00Z
+          ZITADEL_DB_NAME=zitadel
+          ZITADEL_DB_USER=zitadel
+          ZITADEL_DB_PASSWORD=ci-synthetic-0000000000
+          ZITADEL_ADMIN_PASSWORD=Ci-Synthetic-1!
+          EOF
+
+      - name: Validate Docker Compose configuration
+        run: |
+          docker compose -f docker-compose.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.zitadel.yml --env-file "$RUNNER_TEMP/ci.env" config -q
+          docker compose -f docker-compose.yml -f docker-compose.zitadel.yml --env-file "$RUNNER_TEMP/ci.env" config --format json > "$RUNNER_TEMP/rendered.json"
+
+      - name: Published ports are bound to localhost only
+        run: |
+          jq -e '[.services[].ports[]?] | length > 0' "$RUNNER_TEMP/rendered.json" > /dev/null
+          jq -e '[.services[].ports[]? | .host_ip] | all(. == "127.0.0.1")' "$RUNNER_TEMP/rendered.json" > /dev/null
+
+      - name: No docker.sock mounts
+        run: |
+          ! grep -rn "docker.sock" docker-compose.yml docker-compose.zitadel.yml zitadel/traefik "$RUNNER_TEMP/rendered.json"
+
+      - name: Shell syntax
+        run: sh -n zitadel/create-db.sh

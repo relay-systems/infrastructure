@@ -2,7 +2,7 @@
 
 Overlay `docker-compose.zitadel.yml`: `zitadel-api`, `zitadel-login`, `zitadel-proxy` (Traefik, file provider).
 It uses its own `zitadel` database and role on the existing `postgres` service. The `relay` database is never touched.
-Everything runs from `infrastructure/`. This setup is LOCAL ONLY (http, containers as root, PAT valid until 2099).
+Everything runs from the repository root. This setup is LOCAL ONLY (http, containers as root, PAT valid until 2099).
 
 Prerequisites: Docker Engine 24+, Compose v2, at least 2 GB RAM.
 
