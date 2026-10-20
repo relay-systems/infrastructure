@@ -1,0 +1,10 @@
+# Internal listener :80 (published only as 127.0.0.1:${PROXY_HTTP_PUBLISHED_PORT} by the overlay).
+entryPoints:
+  web:
+    address: ":80"
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: false
+log:
+  level: INFO
