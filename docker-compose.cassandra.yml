@@ -1,0 +1,30 @@
+# Cassandra overlay. LOCAL DEVELOPMENT ONLY: no authentication, so never expose it beyond 127.0.0.1.
+# Self-contained: it does not depend on PostgreSQL or ZITADEL, so it can run alone:
+#   docker compose -f docker-compose.cassandra.yml up -d --wait
+# or together with the other files by adding it with another -f.
+# Never remove the `cassandra_data` volume (or run `docker compose down -v`): it holds all Cassandra data.
+services:
+  cassandra:
+    image: ${CASSANDRA_IMAGE:-cassandra:5.0.9}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: relay-local
+      # Cassandra 5.0 uses G1: set only the max heap (HEAP_NEWSIZE would be ignored with a warning).
+      MAX_HEAP_SIZE: 512M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    mem_limit: 1536m
+    cpus: 2
+    # Time to drain on shutdown, so the next start does not replay the commit log.
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'SELECT release_version FROM system.local' 127.0.0.1 9042 > /dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+volumes:
+  cassandra_data:
